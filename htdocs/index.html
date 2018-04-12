@@ -6,6 +6,12 @@
     <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
     <script type="text/javascript" src="AFB-websock.js"></script>
     <script type="text/javascript" src="iotbzh-Binding.js"></script>
+
+    <script type="text/javascript" src="assets/d3.v3.min.js"></script>
+    <!-- <script type="text/javascript" src="assets/d3.v5.min.js"></script> -->
+
+    <link rel="stylesheet" href="d3js-graph.css">
+    <script type="text/javascript" src="d3js-graph.js"></script>
 </head>
 
 <body class="page-content" onload="init()">
@@ -25,9 +31,17 @@
         <button onclick="callbinder('xds-service','list' ,{});">List</button>
         </li>
 
+        <button onclick="graphAGLBindings();">Graph AGL bindings</button>
+        </li>
+
         <button onclick="callbinder('xds-service','trace' ,{'ws': 'unix:ave'});">Trace ws unix:ave</button>
         </li>
 
+    </div>
+
+    <br>
+
+    <div id="graph">
     </div>
 
     <br>
