@@ -1,0 +1,48 @@
+<html>
+
+<head>
+    <title>XDS data collector binding Test</title>
+    <link rel="stylesheet" href="iotbzh-Binding.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <script type="text/javascript" src="AFB-websock.js"></script>
+    <script type="text/javascript" src="iotbzh-Binding.js"></script>
+</head>
+
+<body class="page-content" onload="init()">
+
+    <img src="assets/iot-bzh-logo-small.png">
+
+    <h1>XDS data collector prototype Test</h1>
+
+    <button id="connected" onclick="init()">Binder WS Fail</button>
+    <button id="monitoring" onclick="window.open('/monitoring/monitor.html','_monitor_ctl')">Debug/Monitoring</a>
+    </button>
+
+    <br>
+    <br>
+
+    <div>
+        <button onclick="callbinder('xds-service','list' ,{});">List</button>
+        </li>
+
+        <button onclick="callbinder('xds-service','trace' ,{'ws': 'unix:ave'});">Trace ws unix:ave</button>
+        </li>
+
+    </div>
+
+    <br>
+
+    <div id="main" style="visibility:hidden">
+        <ol>
+            <li>Question
+                <pre id="question"></pre>
+            </li>
+            <li>Response
+                <pre id="output"></pre>
+            </li>
+            <li>Events:
+                <pre id="outevt"></pre>
+            </li>
+        </ol>
+    </div>
+</body>
