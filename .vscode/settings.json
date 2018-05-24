@@ -1,9 +1,17 @@
 {
+    "[json]": {
+        "editor.quickSuggestions": {
+            "strings": true
+        },
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+    },
     "files.associations": {
         "*.bb": "bat",
         "*.inc": "bat",
         "*.bbclass": "bat",
         "*.rules": "shellscript",
+        "Jenkinsfile": "declarative",
         "json.h": "c",
         "afb-binding.h": "c",
         "string.h": "c",
@@ -28,11 +36,17 @@
         "utility": "c",
         "supervisor-service.h": "c",
         "typeinfo": "c",
-        "istream": "c"
+        "istream": "c",
+        "xds-binding.h": "c",
+        "ctl-plugin.h": "c",
+        "unistd.h": "c",
+        "supervisor.h": "c",
+        "sstream": "c",
+        "stat.h": "c"
     },
-
     // Words to add to dictionary for a workspace.
     "cSpell.words": [
+        "CTLP",
         "callbinder",
         "gotevent",
         "ldpaths",
@@ -45,5 +59,6 @@
         "replyok",
         "reqid",
         "roothttp"
-    ]
+    ],
+    "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }

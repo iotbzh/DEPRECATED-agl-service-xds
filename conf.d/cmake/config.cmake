@@ -18,9 +18,8 @@
 
 # Project Info
 # ------------------
-set(PROJECT_NAME xds-service)
-set(PROJECT_VERSION "1.0")
-set(PROJECT_PRETTY_NAME "XDS collector service for AGL")
+set(PROJECT_NAME xds)
+set(PROJECT_PRETTY_NAME "XDS collector Service")
 set(PROJECT_DESCRIPTION "Provide an AGL XDS collector Binding")
 set(PROJECT_URL "https://github.com/iotbzh/agl-service-xds")
 set(PROJECT_ICON "icon.png")
@@ -37,9 +36,6 @@ set(PROJECT_APP_TEMPLATES_DIR "conf.d/app-templates")
 # but used and must be built and linked.
 # set(PROJECT_LIBDIR "libs")
 
-# Where are stored data for your application. Pictures, static resources must be placed in that folder.
-# set(PROJECT_RESOURCES "data")
-
 # Which directories inspect to find CMakeLists.txt target files
 # set(PROJECT_SRC_DIR_PATTERN "*")
 
@@ -47,6 +43,9 @@ set(PROJECT_APP_TEMPLATES_DIR "conf.d/app-templates")
 # ----------------------------------
 set(CMAKE_BUILD_TYPE "DEBUG")
 #set(USE_EFENCE 1)
+
+# Helpers Submodule parameters
+set(AFB_HELPERS_QTWSCLIENT OFF CACHE BOOL "Adds QT5 WebSocket helpers from submodule")
 
 # Kernel selection if needed. You can choose between a
 # mandatory version to impose a minimal version.
@@ -83,7 +82,6 @@ set(CMAKE_INSTALL_PREFIX $ENV{HOME}/opt)
 # Customize link option
 # -----------------------------
 #list(APPEND link_libraries -an-option)
-list(APPEND link_libraries afb-helpers)
 
 # Compilation options definition
 # Use CMake generator expressions to specify only for a specific language
@@ -126,6 +124,12 @@ list(APPEND link_libraries afb-helpers)
 # -g
 # -O2
 # CACHE STRING "Compilation flags for RELEASE build type.")
+
+set(CONTROL_SUPPORT_LUA 1)
+add_definitions(-DCONTROL_PLUGIN_PATH="${CMAKE_BINARY_DIR}/package/lib/plugins:${CMAKE_BINARY_DIR}/package/var:${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/lib/plugins")
+add_definitions(-DCONTROL_CONFIG_PATH="${CMAKE_BINARY_DIR}/package/etc:${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/etc")
+add_definitions(-DCTL_PLUGIN_MAGIC=1286576532)
+add_definitions(-DUSE_API_DYN=1)
 
 # (BUG!!!) as PKG_CONFIG_PATH does not work [should be an env variable]
 # ---------------------------------------------------------------------
@@ -193,7 +197,7 @@ set(AFB_REMPORT "5678" CACHE PATH "Default binder listening port")
 
 # Print a helper message when every thing is finished
 # ----------------------------------------------------
-set(CLOSING_MESSAGE "Typical binding launch: afb-daemon --port=${AFB_REMPORT} --workdir=${CMAKE_BINARY_DIR}/package --ldpaths=lib --roothttp=htdocs  --token=\"${AFB_TOKEN}\" --verbose --ws-client=unix:/tmp/supervisor --ws-client=unix:/tmp/harvester")
+set(CLOSING_MESSAGE "Typical binding launch: afb-daemon --port=${AFB_REMPORT} --name=afb-xds --workdir=${CMAKE_BINARY_DIR}/package --ldpaths=lib --roothttp=htdocs  --token=\"${AFB_TOKEN}\" --verbose --ws-client=unix:/tmp/supervisor --ws-client=unix:/tmp/harvester")
 set(PACKAGE_MESSAGE "Install widget file using in the target : afm-util install ${PROJECT_NAME}.wgt")
 
 # Optional schema validator about now only XML, LUA and JSON

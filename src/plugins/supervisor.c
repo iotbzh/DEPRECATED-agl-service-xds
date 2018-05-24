@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 #define _GNU_SOURCE
-#include "supervisor-service.h"
-#include "xds-service-api.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "curl-wrap.h"
+#include "ctl-plugin.h"
+#include "supervisor-api.h"
+#include "supervisor.h"
 #include "wrap-json.h"
-
-#define SRV_SUPERVISOR_NAME "supervisor"
 
 struct afb_cred {
     int refcount;
@@ -37,17 +35,22 @@ struct afb_cred {
 
 static const char* null_str = "null";
 
-static void decode_daemons_cb(void* closure, json_object* obj,
-    const char* resp)
+struct decode_daemon_str {
+    DAEMONS_T* daemons;
+    AFB_ApiT api;
+    const char* ignored_daemon;
+};
+
+static void decode_daemons_cb(void* closure, json_object* obj, const char* fName)
 {
     int rc;
     struct afb_cred cred;
     json_object *j_response, *j_query, *j_config, *j_ws_servers, *j_ws_clients;
     json_object *j_name, *j_apis;
-    DAEMONS_T* daemons = (DAEMONS_T*)closure;
+    struct decode_daemon_str* clStr = (struct decode_daemon_str*)closure;
     DAEMON_T* daemon = calloc(sizeof(DAEMON_T), 1);
 
-    if (!daemons)
+    if (!clStr->daemons)
         return;
 
     if ((rc = wrap_json_unpack(obj, "{si si si ss ss ss}", "pid", &cred.pid,
@@ -58,18 +61,18 @@ static void decode_daemons_cb(void* closure, json_object* obj,
         return;
     }
 
-    AFB_INFO("Get config of pid %d", cred.pid);
+    AFB_ApiInfo(clStr->api, "Get config of pid %d", cred.pid);
     daemon->pid = cred.pid;
 
     // Get config
     wrap_json_pack(&j_query, "{s:i}", "pid", cred.pid);
-    rc = afb_service_call_sync(SRV_SUPERVISOR_NAME, "config", j_query, &j_response);
+    rc = AFB_ServiceSync(clStr->api, SRV_SUPERVISOR_NAME, "config", j_query, &j_response);
     if (rc < 0) {
-        AFB_ERROR("Cannot get config of pid %d", cred.pid);
+        AFB_ApiError(clStr->api, "Cannot get config of pid %d", cred.pid);
         return;
     }
 
-    AFB_DEBUG("%s config result, res=%s", SRV_SUPERVISOR_NAME,
+    AFB_ApiDebug(clStr->api, "%s config result, res=%s", SRV_SUPERVISOR_NAME,
         json_object_to_json_string(j_response));
 
     if (json_object_object_get_ex(j_response, "response", &j_config)) {
@@ -81,11 +84,18 @@ static void decode_daemons_cb(void* closure, json_object* obj,
             "ws_servers", &j_ws_servers,
             "ws_clients", &j_ws_clients);
         if (rc < 0) {
-            AFB_ERROR("Error decoding config response %s", wrap_json_get_error_string(rc));
+            AFB_ApiError(clStr->api, "Error decoding config response %s", wrap_json_get_error_string(rc));
             return;
         }
 
         daemon->name = json_object_is_type(j_name, json_type_null) ? null_str : json_object_get_string(j_name);
+
+        // ignored some daemon
+        if (clStr->ignored_daemon != NULL && strstr(daemon->name, clStr->ignored_daemon) != NULL) {
+            free(daemon);
+            return;
+        }
+
         daemon->ws_servers = j_ws_servers;
         daemon->isServer = (json_object_array_length(j_ws_servers) > 0);
         daemon->ws_clients = j_ws_clients;
@@ -99,53 +109,55 @@ static void decode_daemons_cb(void* closure, json_object* obj,
         "api", "monitor",
         "verb", "get",
         "args", "apis", true);
-    rc = afb_service_call_sync(SRV_SUPERVISOR_NAME, "do", j_query, &j_response);
+    rc = AFB_ServiceSync(clStr->api, SRV_SUPERVISOR_NAME, "do", j_query, &j_response);
     if (rc < 0) {
-        AFB_ERROR("Cannot get apis of pid %d", cred.pid);
+        AFB_ApiError(clStr->api, "Cannot get apis of pid %d", cred.pid);
         return;
     } else {
-        //AFB_DEBUG("%s do ...get apis result, res=%s", SRV_SUPERVISOR_NAME,
-        //    json_object_to_json_string(j_response));
+        AFB_ApiDebug(clStr->api, "%s do ...get apis result, res=%s", SRV_SUPERVISOR_NAME, json_object_to_json_string(j_response));
 
-        if (json_object_object_get_ex(j_response, "response", &j_config) &&
-            json_object_object_get_ex(j_config, "apis", &j_apis)) {
+        if (json_object_object_get_ex(j_response, "response", &j_config) && json_object_object_get_ex(j_config, "apis", &j_apis)) {
             daemon->apis = j_apis;
         }
     }
-    daemons->daemons[daemons->count] = daemon;
-    daemons->count++;
+    clStr->daemons->daemons[clStr->daemons->count] = daemon;
+    clStr->daemons->count++;
 }
 
-int getDaemons(DAEMONS_T** daemons)
+int getDaemons(AFB_ApiT apiHandle, DAEMONS_T** daemons)
 {
     int rc;
     json_object *j_response, *j_daemons = NULL;
 
     *daemons = calloc(sizeof(DAEMONS_T), 1);
 
-    if ((rc = afb_service_call_sync(SRV_SUPERVISOR_NAME, "discover", NULL,
+    if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "discover", NULL,
              &j_response))
         < 0) {
         return rc;
     }
 
-    if ((rc = afb_service_call_sync(SRV_SUPERVISOR_NAME, "list", NULL,
+    if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "list", NULL,
              &j_response))
         < 0) {
         return rc;
     }
 
-    AFB_DEBUG("%s list result, res=%s", SRV_SUPERVISOR_NAME,
-        json_object_to_json_string(j_response));
+    AFB_ApiDebug(apiHandle, "%s list result, res=%s", SRV_SUPERVISOR_NAME, json_object_to_json_string(j_response));
 
     if (json_object_object_get_ex(j_response, "response", &j_daemons)) {
-        wrap_json_object_for_all(j_daemons, &decode_daemons_cb, *daemons);
+        struct decode_daemon_str str = {
+            *daemons,
+            apiHandle,
+            GetBinderName()
+        };
+        wrap_json_object_for_all(j_daemons, decode_daemons_cb, &str);
     }
 
     return 0;
 }
 
-int trace_exchange(DAEMON_T* svr, DAEMON_T* cli)
+int trace_exchange(AFB_ApiT apiHandle, DAEMON_T* svr, DAEMON_T* cli)
 {
     int rc;
     json_object *j_response, *j_query;
@@ -156,19 +168,19 @@ int trace_exchange(DAEMON_T* svr, DAEMON_T* cli)
 
     wrap_json_pack(&j_query, "{s:i, s:{s:s}}", "pid", svr->pid, "add",
         "request", "common");
-    if ((rc = afb_service_call_sync(SRV_SUPERVISOR_NAME, "trace", j_query,
+    if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query,
              &j_response))
         < 0) {
-        AFB_ERROR("ERROR trace %d result: %s", svr->pid,
+        AFB_ApiError(apiHandle, "ERROR trace %d result: %s", svr->pid,
             json_object_to_json_string(j_response));
         return rc;
     }
 
     wrap_json_pack(&j_query, "{s:i}", "pid", cli->pid);
-    if ((rc = afb_service_call_sync(SRV_SUPERVISOR_NAME, "trace", j_query,
+    if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query,
              &j_response))
         < 0) {
-        AFB_ERROR("ERROR trace %d result: %s", cli->pid,
+        AFB_ApiError(apiHandle, "ERROR trace %d result: %s", cli->pid,
             json_object_to_json_string(j_response));
         return rc;
     }
@@ -176,4 +188,7 @@ int trace_exchange(DAEMON_T* svr, DAEMON_T* cli)
     return 0;
 }
 
-void supervisor_service_init(void) {}
+int supervisor_init(void)
+{
+    return 0;
+}

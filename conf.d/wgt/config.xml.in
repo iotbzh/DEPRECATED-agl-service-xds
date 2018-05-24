@@ -7,10 +7,10 @@
   <author>@PROJECT_AUTHOR@ &lt;@PROJECT_AUTHOR_MAIL@&gt;</author>
   <license>@PROJECT_LICENSE@</license>
   <feature name="urn:AGL:widget:provided-api">
-     <param name="xds-service" value="ws" />
+     <param name="xds" value="ws" />
   </feature>
   <feature name="urn:AGL:widget:required-api">
-     <param name="lib/afb-xds-service.so" value="local" />
+     <param name="lib/afb-xds.so" value="local" />
     <param name="harvester" value="ws" />
     <param name="supervisor" value="ws" />
   </feature>

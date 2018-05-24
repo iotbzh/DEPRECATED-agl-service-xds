@@ -7,7 +7,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#	http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,27 @@
 # limitations under the License.
 ###########################################################################
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
+PROJECT_TARGET_ADD(supervisor)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/conf.d/cmake/config.cmake)
+		# Define targets
+		ADD_LIBRARY(${TARGET_NAME} MODULE
+			${TARGET_NAME}-api.c
+            ${TARGET_NAME}.c
+			../utils/list.c)
+
+		# Alsa Plugin properties
+		SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
+				LABELS "PLUGIN"
+				PREFIX ""
+				SUFFIX ".ctlso"
+				OUTPUT_NAME ${TARGET_NAME}
+		)
+
+		# Library dependencies (include updates automatically)
+		TARGET_LINK_LIBRARIES(${TARGET_NAME}
+				afb-helpers
+				${link_libraries}
+		)
+
+		target_include_directories(${TARGET_NAME}
+		PRIVATE "${CMAKE_SOURCE_DIR}/app-controller/ctl-lib")
