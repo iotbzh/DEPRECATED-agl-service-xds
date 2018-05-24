@@ -1,0 +1,27 @@
+{
+  "$schema": "http://iot.bzh/download/public/schema/json/ctl-schema.json",
+  "metadata": {
+    "uid": "XDS",
+    "version": "1.0",
+    "api": "xds",
+    "info": "XDS Data collection binding"
+  },
+  "plugins": [{
+    "uid": "supervisor",
+    "info": "Plugin to handle interface with supervisor",
+    "spath": "lib/plugins",
+    "libs": "supervisor.ctlso"
+  }],
+
+  "onload": [],
+
+  "controls": [{
+      "uid": "list",
+      "action": "plugin://supervisor#list"
+    },
+    {
+      "uid": "trace",
+      "action": "plugin://supervisor#trace"
+    }
+  ]
+}

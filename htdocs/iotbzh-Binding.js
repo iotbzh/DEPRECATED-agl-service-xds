@@ -131,7 +131,7 @@ function init(elemID, api, verb, query) {
 
   function onopen() {
     // Request initial authorization
-    callbinder('xds-service', 'auth', '');
+    callbinder('xds', 'auth', '');
 
     document.getElementById("main").style.visibility = "visible";
     document.getElementById("connected").innerHTML = "Binder WS Active";

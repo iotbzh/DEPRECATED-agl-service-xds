@@ -47,9 +47,10 @@ afb-daemon --port=1234 --workdir=./build/package --ldpaths=lib --roothttp=htdocs
 
 cd $ROOT_DIR/agl-service-xds
 ./conf.d/autobuild/linux/autobuild build
-afb-daemon --port=5678 --workdir=./build/package --ldpaths=lib --roothttp=htdocs  --token= --ws-client=unix:/tmp/supervisor --ws-client=unix:/tmp/harvester -vv
-
+afb-daemon --port=5678 --name=afb-xds --workdir=./build/package --ldpaths=lib --roothttp=htdocs  --token=1977 --ws-client=unix:/tmp/supervisor --ws-client=unix:/tmp/harvester -vv
 ```
+
+afb-client-demo -H 'localhost:5678/api?token=1977&uuid=magic' xds list
 
 ## Deploy
 

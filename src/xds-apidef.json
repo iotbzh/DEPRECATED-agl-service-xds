@@ -2,22 +2,40 @@
   "openapi": "3.0.0",
   "$schema": "http://iot.bzh/download/openapi/schema-3.0/default-schema.json",
   "info": {
-    "description": "TBD - TODO",
-    "title": "xds-service",
+    "description": "",
+    "title": "xds",
     "version": "4.0",
     "x-binding-c-generator": {
-      "api": "xds-service",
+      "api": "xds",
       "version": 2,
-      "prefix": "",
+      "prefix": "afv_",
       "postfix": "",
-      "start": null,
-      "onevent": "xds_event_cb",
+      "start": null ,
+      "onevent": null,
       "init": "init",
       "scope": "",
       "private": false
     }
   },
-  "servers": [{}],
+  "servers": [
+    {
+      "url": "ws://{host}:{port}/api/monitor",
+      "description": "TS caching binding",
+      "variables": {
+        "host": {
+          "default": "localhost"
+        },
+        "port": {
+          "default": "1234"
+        }
+      },
+      "x-afb-events": [
+        {
+          "$ref": "#/components/schemas/afb-event"
+        }
+      ]
+    }
+  ],
   "components": {
     "schemas": {
       "afb-reply": {
@@ -29,7 +47,7 @@
       "afb-reply-v2": {
         "title": "Generic response.",
         "type": "object",
-        "required": ["jtype", "request"],
+        "required": [ "jtype", "request" ],
         "properties": {
           "jtype": {
             "type": "string",
@@ -37,44 +55,28 @@
           },
           "request": {
             "type": "object",
-            "required": ["status"],
+            "required": [ "status" ],
             "properties": {
-              "status": {
-                "type": "string"
-              },
-              "info": {
-                "type": "string"
-              },
-              "token": {
-                "type": "string"
-              },
-              "uuid": {
-                "type": "string"
-              },
-              "reqid": {
-                "type": "string"
-              }
+              "status": { "type": "string" },
+              "info": { "type": "string" },
+              "token": { "type": "string" },
+              "uuid": { "type": "string" },
+              "reqid": { "type": "string" }
             }
           },
-          "response": {
-            "type": "object"
-          }
+          "response": { "type": "object" }
         }
       },
       "afb-event-v2": {
         "type": "object",
-        "required": ["jtype", "event"],
+        "required": [ "jtype", "event" ],
         "properties": {
           "jtype": {
             "type": "string",
             "const": "afb-event"
           },
-          "event": {
-            "type": "string"
-          },
-          "data": {
-            "type": "object"
-          }
+          "event": { "type": "string" },
+          "data": { "type": "object" }
         }
       }
     },
@@ -87,16 +89,16 @@
       }
     },
     "responses": {
-      "200": {
-        "description": "A complex object array response",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/afb-reply"
+            "200": {
+              "description": "A complex object array response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/afb-reply"
+                  }
+                }
             }
           }
-        }
-      }
     }
   },
   "paths": {

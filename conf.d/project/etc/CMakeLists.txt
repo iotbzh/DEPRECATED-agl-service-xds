@@ -1,5 +1,7 @@
 ###########################################################################
-# Copyright 2018 IoT.bzh
+# Copyright 2017 IoT.bzh
+#
+# author: Fulup Ar Foll <fulup@iot.bzh>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,29 +16,16 @@
 # limitations under the License.
 ###########################################################################
 
-# Add target to project dependency list
-PROJECT_TARGET_ADD(xds-service)
+##################################################
+# Control Policy Config file
+##################################################
+PROJECT_TARGET_ADD(xds-config)
 
-    # Define project Targets
-    file(GLOB sourcelist "*.c")
+	file(GLOB CONF_FILES "*.json")
 
-    # Define project Targets
-    ADD_LIBRARY(${TARGET_NAME} MODULE ${sourcelist})
+	add_input_files("${CONF_FILES}")
 
-    target_compile_options(${TARGET_NAME}
-        PUBLIC  -Wno-unused-variable
-    )
-
-
-    # Binder exposes a unique public entry point
-    SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-	    PREFIX "afb-"
-        LABELS "BINDINGV2"
-	    LINK_FLAGS  ${BINDINGS_LINK_FLAG}
-        OUTPUT_NAME ${TARGET_NAME}
-    )
-
-    TARGET_LINK_LIBRARIES(${TARGET_NAME}
-        afb-helpers
-	    ${link_libraries}
-    )
+	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
+	LABELS "BINDING-CONFIG"
+	OUTPUT_NAME ${TARGET_NAME}
+	)

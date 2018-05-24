@@ -11,6 +11,7 @@
             "program": "/opt/AGL/bin/afb-daemon",
             "args": [
                 "--port=5678",
+                "--name=afb-xds",
                 "--ws-client=unix:/tmp/supervisor",
                 "--workdir=${workspaceRoot}/build/package/",
                 "--ldpaths=lib",
@@ -24,7 +25,9 @@
             "cwd": "${workspaceRoot}/build/package",
             "environment": [
             ],
-            "externalConsole": false,
+            "windows": {
+                "externalConsole": false
+            },
             "MIMode": "gdb",
             "setupCommands": [
                 {

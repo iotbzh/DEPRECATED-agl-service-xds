@@ -1,11 +1,12 @@
 /*
  * Copyright (C) 2018 "IoT.bzh"
+ * Author "Sebastien Douheret" <sebastien@iot.bzh>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,32 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #define _GNU_SOURCE
-#include "xds-service-api.h"
-#include "supervisor-service.h"
-#include "xds-service-apidef.h"
+#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
+#include <unistd.h>
 
-#define SRV_SUPERVISOR_NAME "supervisor"
-#define SRV_HARVESTER_NAME "harvester"
+#include "ctl-plugin.h"
+#include "supervisor-api.h"
+#include "supervisor.h"
+#include "wrap-json.h"
 
-typedef struct metric_t {
-    char* name;
-    json_object* data;
-    struct timespec timestamp;
-} METRIC_T;
+CTLP_CAPI_REGISTER("supervisor");
 
-void list(struct afb_req request)
+CTLP_ONLOAD(plugin, ret)
+{
+    return 0;
+}
+
+CTLP_CAPI(list, source, argsJ, eventJ)
 {
     json_object *result, *item = NULL;
     DAEMONS_T* daemons = NULL;
 
-    getDaemons(&daemons);
+    getDaemons(source->api, &daemons);
     if (daemons == NULL) {
-        afb_req_fail(request, "failed", "");
-        return;
+        AFB_ApiError(source->api, "failed");
+        return ERROR;
     }
 
     result = json_object_new_array();
@@ -55,35 +58,35 @@ void list(struct afb_req request)
         //, "config", daemons->daemons[i]->config);
         json_object_array_add(result, item);
     }
-    afb_req_success(request, result, NULL);
+    AFB_ReqSucess(source->request, result, NULL);
+    return 0;
 }
 
-void trace(struct afb_req request)
+CTLP_CAPI(trace, source, argsJ, eventJ)
 {
     int rc;
-    json_object* req_args = afb_req_json(request);
     json_object* result = NULL;
     DAEMONS_T* daemons = NULL;
     const char* ws_name;
     const char* wsn;
 
-    if (wrap_json_unpack(req_args, "{s:?s}", "ws", &ws_name)) {
-        afb_req_fail(request, "Failed", "Error processing arguments.");
-        return;
+    if (wrap_json_unpack(argsJ, "{s:?s}", "ws", &ws_name)) {
+        AFB_ReqFail(source->request, "Failed", "Error processing arguments.");
+        return ERROR;
     }
-    AFB_INFO("Trace ws: %s", ws_name);
+    AFB_ApiNotice(source->api, "Trace ws: %s", ws_name);
 
-    getDaemons(&daemons);
+    getDaemons(source->api, &daemons);
     if (daemons == NULL || daemons->count <= 0) {
-        afb_req_fail(request, "failed", "No daemon found");
+        AFB_ReqFail(source->request, "failed", "No daemon found");
     }
 
     // search server and client pid
     DAEMON_T *pid_s = NULL, *pid_c = NULL;
     for (int i = 0; i < daemons->count; i++) {
-        AFB_DEBUG("_DEBUG_ svr %s",
+        AFB_ApiDebug(source->api, "_DEBUG_ svr %s",
             json_object_to_json_string(daemons->daemons[i]->ws_servers));
-        AFB_DEBUG("_DEBUG_ cli %s",
+        AFB_ApiDebug(source->api, "_DEBUG_ cli %s",
             json_object_to_json_string(daemons->daemons[i]->ws_clients));
 
         json_object* ws_servers = daemons->daemons[i]->ws_servers;
@@ -106,53 +109,24 @@ void trace(struct afb_req request)
         }
 
         if (pid_s != NULL && pid_c != NULL) {
-            if ((rc = trace_exchange(pid_s, pid_c)) < 0) {
-                afb_req_fail_f(request, "failed", "Trace error %d", rc);
+            if ((rc = trace_exchange(source->api, pid_s, pid_c)) < 0) {
+                AFB_ReqFailF(source->request, "failed", "Trace error %d", rc);
             }
             break;
         }
     }
 
     if (pid_s == NULL || pid_c == NULL) {
-        afb_req_fail(request, "failed", "Cannot determine Server or Client");
-        return;
+        AFB_ReqFail(source->request, "failed", "Cannot determine Server or Client");
+        return ERROR;
     }
 
-    afb_req_success_f(request, result, "Tracing Server pid=%d <-> Client pid=%d",
-        pid_s->pid, pid_c->pid);
-}
+    AFB_ReqSucessF(source->request, result, "Tracing Server pid=%d <-> Client pid=%d", pid_s->pid, pid_c->pid);
 
-static int harvester_post_data(METRIC_T* metric)
-{
-
-    int rc;
-    json_object *j_res, *j_query;
-
-    if (!metric->timestamp.tv_sec && !metric->timestamp.tv_nsec) {
-        clock_gettime(CLOCK_MONOTONIC, &metric->timestamp);
-    }
-
-    rc = wrap_json_pack(&j_query, "{s:s s:i s:{ s:s s:o s:i } }", "host",
-        "localhost", "port", 8086, "metric", "name", metric->name,
-        "value", metric->data, "timestamp",
-        metric->timestamp.tv_sec);
-    if (rc < 0) {
-        AFB_ERROR("Error packing metric, rc=%d", rc);
-        return rc;
-    }
-
-    AFB_DEBUG("%s write: %s", SRV_HARVESTER_NAME,
-        json_object_to_json_string(j_query));
-
-    rc = afb_service_call_sync(SRV_HARVESTER_NAME, "write", j_query, &j_res);
-    if (rc < 0) {
-        AFB_ERROR("Error %s write : rc=%d, j_res=%s", SRV_HARVESTER_NAME, rc,
-            json_object_to_json_string(j_res));
-        return rc;
-    }
     return 0;
 }
 
+/* SEB TODO
 void xds_event_cb(const char* evtname, json_object* j_event)
 {
     int rc;
@@ -187,38 +161,4 @@ void xds_event_cb(const char* evtname, json_object* j_event)
         }
     }
 }
-
-void auth(struct afb_req request)
-{
-    afb_req_session_set_LOA(request, 1);
-    afb_req_success(request, NULL, NULL);
-}
-
-int init()
-{
-
-#if 0 // DEBUG
-  DAEMONS_T *daemons = NULL;
-  getDaemons(&daemons);
-
-  if (daemons) {
-    if (daemons->count) {
-      AFB_DEBUG("_DEBUG_ daemons->count %d", daemons->count);
-      for (int i = 0; i < daemons->count; i++) {
-        AFB_DEBUG("pid %d : isServer %d, isClient %d, %s %s",
-               daemons->daemons[i]->pid, daemons->daemons[i]->isServer,
-               daemons->daemons[i]->isClient,
-               json_object_to_json_string(daemons->daemons[i]->ws_servers),
-               json_object_to_json_string(daemons->daemons[i]->ws_clients));
-      }
-      free(daemons);
-    } else {
-      AFB_DEBUG("_DEBUG_ no dameons detected !");
-    }
-  }
-#endif
-
-    supervisor_service_init();
-
-    return 0;
-}
+*/

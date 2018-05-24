@@ -19,6 +19,8 @@
 #include <stdbool.h>
 #include "wrap-json.h"
 
+#define SRV_SUPERVISOR_NAME "supervisor"
+
 // FIXME Use chained list instead of static array
 #define MAX_CLIENTS 32
 #define MAX_SERVERS 32
@@ -46,6 +48,6 @@ typedef struct daemons_result_
 } DAEMONS_T;
 
 
-extern int getDaemons(DAEMONS_T **daemons);
-extern int trace_exchange(DAEMON_T *svr, DAEMON_T *cli);
-extern void supervisor_service_init(void);
+extern int getDaemons(AFB_ApiT apiHandle, DAEMONS_T **daemons);
+extern int trace_exchange(AFB_ApiT apiHandle, DAEMON_T *svr, DAEMON_T *cli);
+extern int supervisor_init(void);

@@ -64,7 +64,7 @@ var links = [
 
 
 function graphAGLBindings() {
-    callbinder('xds-service', 'list', {})
+    callbinder('xds', 'list', {})
         .then(function (res) {
             links = [];
             nodes = {};
