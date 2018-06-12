@@ -17,7 +17,8 @@
             "command": "clear && cd build && make",
             "presentation": {
                 "echo": true,
-                "reveal": "always",
+                //"reveal": "always",
+                "reveal": "silent",
                 "focus": false,
                 "panel": "shared"
             },

@@ -13,6 +13,7 @@
                 "--port=5678",
                 "--name=afb-xds",
                 "--ws-client=unix:/tmp/supervisor",
+                "--ws-client=unix:/tmp/harvester",
                 "--workdir=${workspaceRoot}/build/package/",
                 "--ldpaths=lib",
                 "--roothttp=htdocs",

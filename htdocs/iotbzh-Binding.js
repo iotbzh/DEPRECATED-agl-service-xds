@@ -85,6 +85,7 @@ function callbinder(api, verb, query) {
 //**********************************************
 //
 //**********************************************
+/*
 var topo = null;
 
 function getTopo() {
@@ -119,7 +120,7 @@ function getTopo() {
       console.log()
     });
 };
-
+*/
 
 
 

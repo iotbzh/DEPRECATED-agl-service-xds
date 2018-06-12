@@ -39,6 +39,7 @@ struct decode_daemon_str {
     DAEMONS_T* daemons;
     AFB_ApiT api;
     const char* ignored_daemon;
+    int* ret_code;
 };
 
 static void decode_daemons_cb(void* closure, json_object* obj, const char* fName)
@@ -61,7 +62,7 @@ static void decode_daemons_cb(void* closure, json_object* obj, const char* fName
         return;
     }
 
-    AFB_ApiInfo(clStr->api, "Get config of pid %d", cred.pid);
+    AFB_ApiInfo(clStr->api, "Get supervisor/config - pid %d", cred.pid);
     daemon->pid = cred.pid;
 
     // Get config
@@ -69,6 +70,7 @@ static void decode_daemons_cb(void* closure, json_object* obj, const char* fName
     rc = AFB_ServiceSync(clStr->api, SRV_SUPERVISOR_NAME, "config", j_query, &j_response);
     if (rc < 0) {
         AFB_ApiError(clStr->api, "Cannot get config of pid %d", cred.pid);
+        *clStr->ret_code = rc;
         return;
     }
 
@@ -103,6 +105,8 @@ static void decode_daemons_cb(void* closure, json_object* obj, const char* fName
     }
 
     // Get apis
+    AFB_ApiInfo(clStr->api, "Get supervisor/do monitor get apis - pid %d", cred.pid);
+
     // '{"pid":6262,"api":"monitor","verb":"get","args":{"apis":true}}
     wrap_json_pack(&j_query, "{si ss ss s {sb}}",
         "pid", cred.pid,
@@ -117,6 +121,8 @@ static void decode_daemons_cb(void* closure, json_object* obj, const char* fName
         AFB_ApiDebug(clStr->api, "%s do ...get apis result, res=%s", SRV_SUPERVISOR_NAME, json_object_to_json_string(j_response));
 
         if (json_object_object_get_ex(j_response, "response", &j_config) && json_object_object_get_ex(j_config, "apis", &j_apis)) {
+            // Don't forward monitor config details
+            json_object_object_del(j_apis, "monitor");
             daemon->apis = j_apis;
         }
     }
@@ -131,59 +137,104 @@ int getDaemons(AFB_ApiT apiHandle, DAEMONS_T** daemons)
 
     *daemons = calloc(sizeof(DAEMONS_T), 1);
 
+    AFB_ApiInfo(apiHandle, "Call supervisor/discover");
     if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "discover", NULL,
              &j_response))
         < 0) {
         return rc;
     }
 
+    AFB_ApiInfo(apiHandle, "Call supervisor/list");
     if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "list", NULL,
              &j_response))
         < 0) {
         return rc;
     }
 
+    AFB_ApiInfo(apiHandle, "Get details info for each daemon");
     AFB_ApiDebug(apiHandle, "%s list result, res=%s", SRV_SUPERVISOR_NAME, json_object_to_json_string(j_response));
 
-    if (json_object_object_get_ex(j_response, "response", &j_daemons)) {
-        struct decode_daemon_str str = {
-            *daemons,
-            apiHandle,
-            GetBinderName()
-        };
-        wrap_json_object_for_all(j_daemons, decode_daemons_cb, &str);
+    if (!json_object_object_get_ex(j_response, "response", &j_daemons)) {
     }
+    struct decode_daemon_str cls = {
+        *daemons,
+        apiHandle,
+        apiHandle->apiname,
+        &rc
+    };
+    wrap_json_object_for_all(j_daemons, decode_daemons_cb, &cls);
 
-    return 0;
+    return rc;
 }
 
-int trace_exchange(AFB_ApiT apiHandle, DAEMON_T* svr, DAEMON_T* cli)
+#define XDS_TAG_REQUEST "xds:*/request"
+#define XDS_TAG_EVENT "xds:*/event"
+#define XDS_TRACE_NAME "xds-trace"
+
+int trace_exchange(AFB_ApiT apiHandle, DAEMON_T* svr, DAEMON_T* cli, const char* level)
 {
     int rc;
-    json_object *j_response, *j_query;
+    json_object *j_response, *j_query, *j_tracereq, *j_traceevt;
 
     if (svr == NULL || cli == NULL) {
         return -1;
     }
 
-    wrap_json_pack(&j_query, "{s:i, s:{s:s}}", "pid", svr->pid, "add",
-        "request", "common");
-    if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query,
-             &j_response))
-        < 0) {
+    // First drop previous traces
+    // monitor/trace({ "drop": { "tag": "*/request" } })
+    // Note: ignored error (expected 1st time/when no trace exist)
+    wrap_json_pack(&j_query, "{s:i s:{s:[s s]}}", "pid", svr->pid,
+        "drop", "tag", XDS_TAG_REQUEST, XDS_TAG_EVENT);
+    AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query, &j_response);
+
+    wrap_json_pack(&j_query, "{s:i s:{s:[s s]}}", "pid", cli->pid,
+        "drop", "tag", XDS_TAG_REQUEST, XDS_TAG_EVENT);
+    AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query, &j_response);
+
+    j_tracereq = json_object_new_array();
+    if (level && !strncmp(level, "all", 3)) {
+        json_object_array_add(j_tracereq, json_object_new_string("all"));
+    } else {
+        json_object_array_add(j_tracereq, json_object_new_string("life"));
+        json_object_array_add(j_tracereq, json_object_new_string("result"));
+    }
+    json_object_get(j_tracereq); // because use 2 times to configure both server and client
+
+    j_traceevt = json_object_new_array();
+    if (level && !strncmp(level, "all", 3)) {
+        json_object_array_add(j_traceevt, json_object_new_string("all"));
+    } else {
+        json_object_array_add(j_traceevt, json_object_new_string("common"));
+    }
+    json_object_get(j_traceevt); // because use 2 times to configure both server and client
+
+    // Configure trace for server daemon
+    // request: monitor/trace({ "add": { "tag": "xds:*/request", "name": "trace", "request": "all" } })
+    wrap_json_pack(&j_query, "{s:i, s: [{s:s s:s s:o}, {s:s s:s s:o}] }",
+        "pid", svr->pid, "add",
+        "tag", XDS_TAG_REQUEST, "name", XDS_TRACE_NAME, "request", j_tracereq,
+        "tag", XDS_TAG_EVENT, "name", XDS_TRACE_NAME, "event", j_traceevt);
+
+    if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query, &j_response)) < 0) {
         AFB_ApiError(apiHandle, "ERROR trace %d result: %s", svr->pid,
             json_object_to_json_string(j_response));
         return rc;
     }
 
-    wrap_json_pack(&j_query, "{s:i}", "pid", cli->pid);
-    if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query,
-             &j_response))
-        < 0) {
+    // Configure trace for client daemon(s)
+    // request: monitor/trace({ "pid": 1234, "add": { "event": "all" } })
+#if 1 // SEB
+    wrap_json_pack(&j_query, "{s:i, s: [{s:s s:s s:o}, {s:s s:s s:o}] }",
+        "pid", cli->pid, "add",
+        "tag", XDS_TAG_REQUEST, "name", XDS_TRACE_NAME, "request", j_tracereq,
+        "tag", XDS_TAG_EVENT, "name", XDS_TRACE_NAME, "event", j_traceevt);
+
+    if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query, &j_response)) < 0) {
         AFB_ApiError(apiHandle, "ERROR trace %d result: %s", cli->pid,
             json_object_to_json_string(j_response));
         return rc;
     }
+#endif
 
     return 0;
 }

@@ -86,8 +86,6 @@ function graphAGLBindings() {
         });
 }
 
-console.log("SEB d3", d3);
-
 
 // http://bl.ocks.org/mbostock/1153292
 // Compute the distinct nodes from the links.
@@ -188,8 +186,9 @@ function graph_mobile_patent_suits() {
     }
 }
 
+/*
+Just a test of http://bl.ocks.org/d3noob/8375092
 
-// http://bl.ocks.org/d3noob/8375092
 function interactive_tree() {
 
     var treeData = [{
@@ -404,6 +403,10 @@ function interactive_tree() {
     }
 
 }
+*/
+
+/*
+Just a test of https://bl.ocks.org/mbostock/1044242
 
 var flare = [
     {"name":"flare.analytics.cluster.AgglomerativeCluster","size":3938,"imports":["flare.animate.Transitioner","flare.vis.data.DataList","flare.util.math.IMatrix","flare.analytics.cluster.MergeEdge","flare.analytics.cluster.HierarchicalCluster","flare.vis.data.Data"]},
@@ -628,7 +631,6 @@ var flare = [
     {"name":"flare.vis.Visualization","size":16540,"imports":["flare.animate.Transitioner","flare.vis.operator.IOperator","flare.animate.Scheduler","flare.vis.events.VisualizationEvent","flare.vis.data.Tree","flare.vis.events.DataEvent","flare.vis.axis.Axes","flare.vis.axis.CartesianAxes","flare.util.Displays","flare.vis.operator.OperatorList","flare.vis.controls.ControlList","flare.animate.ISchedulable","flare.vis.data.Data"]}
     ];
 
-// https://bl.ocks.org/mbostock/1044242
 function hierarchy_edge_bundling() {
 
     var diameter = 960,
@@ -740,7 +742,7 @@ function hierarchy_edge_bundling() {
     }
 }
 
-
+// Load a graph on startup
 //$("#graph").ready(function(){
 setTimeout(function () {
     //graph_mobile_patent_suits();
@@ -748,3 +750,5 @@ setTimeout(function () {
     //hierarchy_edge_bundling();
 }, 500);
 //});
+
+*/

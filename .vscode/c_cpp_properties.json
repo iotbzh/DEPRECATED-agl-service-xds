@@ -17,6 +17,7 @@
                 "/usr/include"
             ],
             "defines": [
+              "CONTROL_SUPPORT_LUA",
               "AFB_BINDING_PREV3",
               "USE_API_DYN"
             ],
