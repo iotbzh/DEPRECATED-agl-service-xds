@@ -9,19 +9,31 @@
   "plugins": [{
     "uid": "supervisor",
     "info": "Plugin to handle interface with supervisor",
-    "spath": "lib/plugins",
-    "libs": "supervisor.ctlso"
+    "spath": "./lib/plugins:./var",
+    "libs": [
+      "supervisor.ctlso",
+      "xds-supervisor.lua"
+    ]
   }],
 
   "onload": [],
 
   "controls": [{
       "uid": "list",
+      "privileges": "urn:AGL:permission::platform:can:list ",
       "action": "plugin://supervisor#list"
     },
     {
       "uid": "trace",
+      "privileges": "urn:AGL:permission::platform:can:trace ",
       "action": "plugin://supervisor#trace"
     }
+  ],
+
+  "events": [{
+      "uid": "supervisor/xds-trace",
+      "action": "lua://supervisor#_trace_events_"
+    }
   ]
+
 }

@@ -197,7 +197,7 @@ set(AFB_REMPORT "5678" CACHE PATH "Default binder listening port")
 
 # Print a helper message when every thing is finished
 # ----------------------------------------------------
-set(CLOSING_MESSAGE "Typical binding launch: afb-daemon --port=${AFB_REMPORT} --name=afb-xds --workdir=${CMAKE_BINARY_DIR}/package --ldpaths=lib --roothttp=htdocs  --token=\"${AFB_TOKEN}\" --verbose --ws-client=unix:/tmp/supervisor --ws-client=unix:/tmp/harvester")
+set(CLOSING_MESSAGE "Typical binding launch: afb-daemon --port=${AFB_REMPORT} --name=afb-xds --workdir=${CMAKE_BINARY_DIR}/package --ldpaths=lib --roothttp=htdocs  --token=\"${AFB_TOKEN}\" --ws-client=unix:/tmp/supervisor --ws-client=unix:/tmp/harvester -vv ")
 set(PACKAGE_MESSAGE "Install widget file using in the target : afm-util install ${PROJECT_NAME}.wgt")
 
 # Optional schema validator about now only XML, LUA and JSON

@@ -1,4 +1,11 @@
 {
+    "files.exclude": {
+        ".vscode": true,
+        "nbproject": true,
+        "build": true,
+        "**/.git": true,
+        "**/node_modules": true
+    },
     "[json]": {
         "editor.quickSuggestions": {
             "strings": true
@@ -42,12 +49,22 @@
         "unistd.h": "c",
         "supervisor.h": "c",
         "sstream": "c",
-        "stat.h": "c"
+        "stat.h": "c",
+        "filescan-utils.h": "c",
+        "optional": "cpp",
+        "ostream": "cpp",
+        "system_error": "cpp",
+        "supervisor-api.h": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "valarray": "c"
     },
     // Words to add to dictionary for a workspace.
     "cSpell.words": [
         "CTLP",
+        "SPVR",
         "callbinder",
+        "ctlso",
         "gotevent",
         "ldpaths",
         "lightgreen",
@@ -58,7 +75,8 @@
         "replyerr",
         "replyok",
         "reqid",
-        "roothttp"
+        "roothttp",
+        "spath"
     ],
     "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }

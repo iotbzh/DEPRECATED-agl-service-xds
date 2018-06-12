@@ -10,32 +10,28 @@
       "version": 2,
       "prefix": "afv_",
       "postfix": "",
-      "start": null ,
+      "start": null,
       "onevent": null,
       "init": "init",
       "scope": "",
       "private": false
     }
   },
-  "servers": [
-    {
-      "url": "ws://{host}:{port}/api/monitor",
-      "description": "TS caching binding",
-      "variables": {
-        "host": {
-          "default": "localhost"
-        },
-        "port": {
-          "default": "1234"
-        }
+  "servers": [{
+    "url": "ws://{host}:{port}/api/monitor",
+    "description": "TS caching binding",
+    "variables": {
+      "host": {
+        "default": "localhost"
       },
-      "x-afb-events": [
-        {
-          "$ref": "#/components/schemas/afb-event"
-        }
-      ]
-    }
-  ],
+      "port": {
+        "default": "1234"
+      }
+    },
+    "x-afb-events": [{
+      "$ref": "#/components/schemas/afb-event"
+    }]
+  }],
   "components": {
     "schemas": {
       "afb-reply": {
@@ -47,7 +43,7 @@
       "afb-reply-v2": {
         "title": "Generic response.",
         "type": "object",
-        "required": [ "jtype", "request" ],
+        "required": ["jtype", "request"],
         "properties": {
           "jtype": {
             "type": "string",
@@ -55,28 +51,44 @@
           },
           "request": {
             "type": "object",
-            "required": [ "status" ],
+            "required": ["status"],
             "properties": {
-              "status": { "type": "string" },
-              "info": { "type": "string" },
-              "token": { "type": "string" },
-              "uuid": { "type": "string" },
-              "reqid": { "type": "string" }
+              "status": {
+                "type": "string"
+              },
+              "info": {
+                "type": "string"
+              },
+              "token": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "reqid": {
+                "type": "string"
+              }
             }
           },
-          "response": { "type": "object" }
+          "response": {
+            "type": "object"
+          }
         }
       },
       "afb-event-v2": {
         "type": "object",
-        "required": [ "jtype", "event" ],
+        "required": ["jtype", "event"],
         "properties": {
           "jtype": {
             "type": "string",
             "const": "afb-event"
           },
-          "event": { "type": "string" },
-          "data": { "type": "object" }
+          "event": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
         }
       }
     },
@@ -89,16 +101,16 @@
       }
     },
     "responses": {
-            "200": {
-              "description": "A complex object array response",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "$ref": "#/components/schemas/afb-reply"
-                  }
-                }
+      "200": {
+        "description": "A complex object array response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/afb-reply"
             }
           }
+        }
+      }
     }
   },
   "paths": {
@@ -137,8 +149,15 @@
         },
         "parameters": [{
           "in": "query",
+          "name": "pid",
+          "required": false,
+          "schema": {
+            "type": "integer"
+          }
+        }, {
+          "in": "query",
           "name": "ws",
-          "required": true,
+          "required": false,
           "schema": {
             "type": "string"
           }

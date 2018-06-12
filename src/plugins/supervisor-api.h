@@ -16,9 +16,9 @@
  */
 #pragma once
 
-#include <stdbool.h>
-#include "wrap-json.h"
 #include "filescan-utils.h"
+#include "wrap-json.h"
+#include <stdbool.h>
 
 #define SRV_HARVESTER_NAME "harvester"
 
@@ -26,11 +26,19 @@
 #define META_IDENTITY "" // FIXME
 
 #ifndef ERROR
-  #define ERROR -1
+#define ERROR -1
 #endif
+
+typedef enum {
+    SPVR_DATA_STRING = 0,
+    SPVR_DATA_INT,
+    SPVR_DATA_BOOL,
+    SPVR_DATA_FLOAT,
+} SpvrDataTypeT;
 
 typedef struct metric_t {
     char* name;
-    json_object* data;
-    struct timespec timestamp;
+    SpvrDataTypeT dataType;
+    void* data;
+    uint64_t timestamp;
 } METRIC_T;
