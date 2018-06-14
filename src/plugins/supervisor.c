@@ -167,8 +167,8 @@ int getDaemons(AFB_ApiT apiHandle, DAEMONS_T** daemons)
     return rc;
 }
 
-#define XDS_TAG_REQUEST "xds:*/request"
-#define XDS_TAG_EVENT "xds:*/event"
+#define XDS_TAG_REQUEST "xds:trace/request"
+#define XDS_TAG_EVENT "xds:trace/event"
 #define XDS_TRACE_NAME "xds-trace"
 
 int trace_exchange(AFB_ApiT apiHandle, DAEMON_T* svr, DAEMON_T* cli, const char* level)
@@ -181,7 +181,7 @@ int trace_exchange(AFB_ApiT apiHandle, DAEMON_T* svr, DAEMON_T* cli, const char*
     }
 
     // First drop previous traces
-    // monitor/trace({ "drop": { "tag": "*/request" } })
+    // monitor/trace({ "drop": { "tag": "trace/request" } })
     // Note: ignored error (expected 1st time/when no trace exist)
     wrap_json_pack(&j_query, "{s:i s:{s:[s s]}}", "pid", svr->pid,
         "drop", "tag", XDS_TAG_REQUEST, XDS_TAG_EVENT);
@@ -209,7 +209,7 @@ int trace_exchange(AFB_ApiT apiHandle, DAEMON_T* svr, DAEMON_T* cli, const char*
     json_object_get(j_traceevt); // because use 2 times to configure both server and client
 
     // Configure trace for server daemon
-    // request: monitor/trace({ "add": { "tag": "xds:*/request", "name": "trace", "request": "all" } })
+    // request: monitor/trace({ "add": { "tag": "xds:trace/request", "name": "trace", "request": "all" } })
     wrap_json_pack(&j_query, "{s:i, s: [{s:s s:s s:o}, {s:s s:s s:o}] }",
         "pid", svr->pid, "add",
         "tag", XDS_TAG_REQUEST, "name", XDS_TRACE_NAME, "request", j_tracereq,
@@ -223,7 +223,6 @@ int trace_exchange(AFB_ApiT apiHandle, DAEMON_T* svr, DAEMON_T* cli, const char*
 
     // Configure trace for client daemon(s)
     // request: monitor/trace({ "pid": 1234, "add": { "event": "all" } })
-#if 1 // SEB
     wrap_json_pack(&j_query, "{s:i, s: [{s:s s:s s:o}, {s:s s:s s:o}] }",
         "pid", cli->pid, "add",
         "tag", XDS_TAG_REQUEST, "name", XDS_TRACE_NAME, "request", j_tracereq,
@@ -234,7 +233,6 @@ int trace_exchange(AFB_ApiT apiHandle, DAEMON_T* svr, DAEMON_T* cli, const char*
             json_object_to_json_string(j_response));
         return rc;
     }
-#endif
 
     return 0;
 }

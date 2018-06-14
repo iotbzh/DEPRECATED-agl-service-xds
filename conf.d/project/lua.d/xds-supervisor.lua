@@ -17,7 +17,6 @@
 
   NOTE: strict mode: every global variables should be prefixed by '_'
 --]]
-
 -- return serialised version of printable table
 function ToJson(o)
     if type(o) == "table" then
@@ -60,10 +59,10 @@ function _trace_events_(source, args, event)
         ["port"] = 8086,
         ["metric"] = {
             {
-                ["name"] = "supervisor/trace",
+                ["name"] = "xds/supervisor/trace",
                 ["metadata"] = {
-                    ["identity"] = "xds supervisor",
-                    ["tag"] = event["tag"],
+                    ["identity"] = "xds_supervisor",
+                    ["tag"] = event["tag"]
                 },
                 ["values"] = {
                     ["id"] = event["id"]
@@ -81,25 +80,29 @@ function _trace_events_(source, args, event)
         --     return
         -- end
         AFB:notice(source, ">>> PROCESS request %s", request)
+        query.metric[1].metadata.type = "request"
         query.metric[1].metadata.api = request.api
         query.metric[1].metadata.verb = request.verb
         query.metric[1].metadata.action = request.action
         query.metric[1].metadata.session = request.session
         query.metric[1].metadata.req_index = tostring(request.index)
         if event.data then
-            query.metric[1].values.data = ToJson(event.data)
+            local dd = ToJson(event.data)
+            query.metric[1].values.data = dd
+            query.metric[1].values.data_bytes = string.len(dd)
         end
-
     elseif event.event then
         local evt = event.event
         AFB:notice(source, ">>> PROCESS event %s", evt)
+        query.metric[1].metadata.type = "event"
         query.metric[1].metadata.id = evt.id
         query.metric[1].metadata.name = evt.name
         query.metric[1].metadata.action = evt.action
         if event.data then
-            query.metric[1].values.data = ToJson(event.data)
+            local dd = ToJson(event.data)
+            query.metric[1].values.data = dd
+            query.metric[1].values.data_bytes = string.len(dd)
         end
-
     else
         AFB:warning(source, "--InLua-- UNKNOWN _trace_events_ event type: %s\n", Dump_Table(event))
         return
