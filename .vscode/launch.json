@@ -26,9 +26,7 @@
             "cwd": "${workspaceRoot}/build/package",
             "environment": [
             ],
-            "windows": {
-                "externalConsole": false
-            },
+            "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
                 {
