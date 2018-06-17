@@ -24,9 +24,14 @@
       "action": "plugin://supervisor#list"
     },
     {
-      "uid": "trace",
+      "uid": "trace/start",
       "privileges": "urn:AGL:permission::platform:can:trace ",
-      "action": "plugin://supervisor#trace"
+      "action": "plugin://supervisor#trace_start"
+    },
+    {
+      "uid": "trace/stop",
+      "privileges": "urn:AGL:permission::platform:can:trace ",
+      "action": "plugin://supervisor#trace_stop"
     }
   ],
 

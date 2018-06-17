@@ -123,6 +123,14 @@ static void decode_daemons_cb(void* closure, json_object* obj, const char* fName
         if (json_object_object_get_ex(j_response, "response", &j_config) && json_object_object_get_ex(j_config, "apis", &j_apis)) {
             // Don't forward monitor config details
             json_object_object_del(j_apis, "monitor");
+
+            // Only forward apis verb without all details
+            /* TODO
+            j_newApis = json_object_new_object();
+            json_object_object_foreach(json_object_object_get(j_apis, "apis"), key, val) {
+                ...
+            }
+            */
             daemon->apis = j_apis;
         }
     }
@@ -171,34 +179,26 @@ int getDaemons(AFB_ApiT apiHandle, DAEMONS_T** daemons)
 #define XDS_TAG_EVENT "xds:trace/event"
 #define XDS_TRACE_NAME "xds-trace"
 
-int trace_exchange(AFB_ApiT apiHandle, DAEMON_T* svr, DAEMON_T* cli, const char* level)
+int trace_daemon(AFB_ApiT apiHandle, DAEMON_T* dm, const char* level)
 {
     int rc;
     json_object *j_response, *j_query, *j_tracereq, *j_traceevt;
 
-    if (svr == NULL || cli == NULL) {
+    if (dm == NULL) {
         return -1;
     }
 
     // First drop previous traces
-    // monitor/trace({ "drop": { "tag": "trace/request" } })
     // Note: ignored error (expected 1st time/when no trace exist)
-    wrap_json_pack(&j_query, "{s:i s:{s:[s s]}}", "pid", svr->pid,
-        "drop", "tag", XDS_TAG_REQUEST, XDS_TAG_EVENT);
-    AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query, &j_response);
-
-    wrap_json_pack(&j_query, "{s:i s:{s:[s s]}}", "pid", cli->pid,
-        "drop", "tag", XDS_TAG_REQUEST, XDS_TAG_EVENT);
-    AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query, &j_response);
+    trace_drop(apiHandle, dm->pid);
 
     j_tracereq = json_object_new_array();
     if (level && !strncmp(level, "all", 3)) {
         json_object_array_add(j_tracereq, json_object_new_string("all"));
     } else {
         json_object_array_add(j_tracereq, json_object_new_string("life"));
-        json_object_array_add(j_tracereq, json_object_new_string("result"));
+        json_object_array_add(j_tracereq, json_object_new_string("reply"));
     }
-    json_object_get(j_tracereq); // because use 2 times to configure both server and client
 
     j_traceevt = json_object_new_array();
     if (level && !strncmp(level, "all", 3)) {
@@ -206,35 +206,31 @@ int trace_exchange(AFB_ApiT apiHandle, DAEMON_T* svr, DAEMON_T* cli, const char*
     } else {
         json_object_array_add(j_traceevt, json_object_new_string("common"));
     }
-    json_object_get(j_traceevt); // because use 2 times to configure both server and client
 
-    // Configure trace for server daemon
+    // Configure tracing of specified daemon
     // request: monitor/trace({ "add": { "tag": "xds:trace/request", "name": "trace", "request": "all" } })
     wrap_json_pack(&j_query, "{s:i, s: [{s:s s:s s:o}, {s:s s:s s:o}] }",
-        "pid", svr->pid, "add",
+        "pid", dm->pid, "add",
         "tag", XDS_TAG_REQUEST, "name", XDS_TRACE_NAME, "request", j_tracereq,
         "tag", XDS_TAG_EVENT, "name", XDS_TRACE_NAME, "event", j_traceevt);
 
     if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query, &j_response)) < 0) {
-        AFB_ApiError(apiHandle, "ERROR trace %d result: %s", svr->pid,
-            json_object_to_json_string(j_response));
-        return rc;
-    }
-
-    // Configure trace for client daemon(s)
-    // request: monitor/trace({ "pid": 1234, "add": { "event": "all" } })
-    wrap_json_pack(&j_query, "{s:i, s: [{s:s s:s s:o}, {s:s s:s s:o}] }",
-        "pid", cli->pid, "add",
-        "tag", XDS_TAG_REQUEST, "name", XDS_TRACE_NAME, "request", j_tracereq,
-        "tag", XDS_TAG_EVENT, "name", XDS_TRACE_NAME, "event", j_traceevt);
-
-    if ((rc = AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query, &j_response)) < 0) {
-        AFB_ApiError(apiHandle, "ERROR trace %d result: %s", cli->pid,
+        AFB_ApiError(apiHandle, "ERROR tracing pid %d result: %s", dm->pid,
             json_object_to_json_string(j_response));
         return rc;
     }
 
     return 0;
+}
+
+// FIXME prototype must be int trace_drop(AFB_ApiT apiHandle, DAEMON_T* dm)
+int trace_drop(AFB_ApiT apiHandle, int pid)
+{
+    json_object *j_response, *j_query;
+
+    // monitor/trace({ "drop": { "tag": "trace/request" } })
+    wrap_json_pack(&j_query, "{s:i s:{s:[s s]}}", "pid", pid, "drop", "tag", XDS_TAG_REQUEST, XDS_TAG_EVENT);
+    return AFB_ServiceSync(apiHandle, SRV_SUPERVISOR_NAME, "trace", j_query, &j_response);
 }
 
 int supervisor_init(void)
