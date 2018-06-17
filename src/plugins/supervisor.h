@@ -49,5 +49,6 @@ typedef struct daemons_result_
 
 
 extern int getDaemons(AFB_ApiT apiHandle, DAEMONS_T **daemons);
-extern int trace_exchange(AFB_ApiT apiHandle, DAEMON_T *svr, DAEMON_T *cli, const char *level);
+extern int trace_daemon(AFB_ApiT apiHandle, DAEMON_T *dm, const char *level);
+extern int trace_drop(AFB_ApiT apiHandle, int pid);
 extern int supervisor_init(void);

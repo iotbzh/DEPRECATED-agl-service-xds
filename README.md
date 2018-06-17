@@ -91,8 +91,8 @@ cd $ROOT_DIR/agl-services-mockup && start_agl_mockup.sh 1
 # ... at this point script stop and wait user...
 
 # In another shell, execute following commands to request monitoring of can_emul and gps_emul sockets
-afb-client-demo 'localhost:5678/api?token=HELLO&uuid=c' xds trace '{"ws":"can_emul"}'
-afb-client-demo 'localhost:5678/api?token=HELLO&uuid=c' xds trace '{"ws":"gps_emul"}'
+afb-client-demo 'localhost:5678/api?token=HELLO&uuid=c' xds trace/start '{"ws":"can_emul"}'
+afb-client-demo 'localhost:5678/api?token=HELLO&uuid=c' xds trace/start '{"ws":"gps_emul"}'
 
 # Press any key in 1 shell to continue start_agl_mockup.sh script
 
