@@ -93,7 +93,7 @@ CTLP_CAPI(trace_start, source, argsJ, queryJ)
 
     // User can ask to trace either
     //  a specific pid or an array of pids or a specific ws name
-    if (wrap_json_unpack(queryJ, "{s:?i s:?o s:?s s:?s s:?s}",
+    if (wrap_json_unpack(queryJ, "{s:?i s:?o s:?s s:?s}",
             "pid", &pid, "pids", &j_pids, "ws", &ws_name, "level", &level)) {
         AFB_ReqFail(source->request, "Failed", "Error processing arguments.");
         return ERROR;
